@@ -1,6 +1,6 @@
 # CUBRID RDBMS port for Mac OS X
 
-In this tutorial we will go through the entire process of **building CUBRID CCI API on Mac OS X**. Along the way we will patch CUBRID for Mac OS X. Even though these changes may not be enough to build CUBRID on Mac, but it is enough to build CUBRID CCI driver for Mac.
+In this tutorial we will go through the entire process of **building CUBRID CCI API on Mac OS X**. Along the way we will patch CUBRID for Mac OS X. Even though these changes may not be enough to build CUBRID on Mac, it is enough to build CUBRID CCI driver for Mac.
 
 There are some small differences between building on Snow Leopard, Lion, or Mountain Lion in the way that some system header files are located in different locations. I will cover all the steps below.
 
@@ -66,16 +66,18 @@ Some files in CUBRID source code need to be executable while for some reason the
 
 For **CUBRID 8.4.3** the following new files (*absent in previous versions*) also need to be executable.
 
-    chmod +x RB-8.4.3/external/expat-2.0.1/configure
-    chmod +x RB-8.4.3/external/expat-2.0.1/configure.gnu
+    cd RB-8.4.3
+    chmod +x external/expat-2.0.1/configure
+    chmod +x external/expat-2.0.1/configure.gnu
 
 ## Apply Mac OS X specific Patch
 
-In this repo you will find the patch for CUBRID 8.4.1 in the following file:
+In this repo you will find the patch for CUBRID 8.4.1 and CUBRID 8.4.3 in the following files:
 
 1. *rb-8.4.1-svn-diff.patch*
+2. *rb-8.4.3-svn-diff.patch*
 
-This file needs to be copied into the directory where you have extracted CUBRID source code. In our case it is **RB-8.4.1/**.
+These files need to be copied into the directory where you have extracted CUBRID source code. In our case it is **RB-8.4.1/**.
 
 ### Applying 8.4.1 patch
 
