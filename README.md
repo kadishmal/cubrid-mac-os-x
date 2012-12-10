@@ -14,6 +14,8 @@ When installing ensure that the **optional components** for command line develop
 
 ![Figure 1: Installing Xcode and optional components on Snow Leopard.](http://www.cubrid.org/files/attach/images/194379/022/389/xcode_optional_components.png)
 
+On Mountain Lion, once you install Xcode, you can install the *Common Line Tools* under *Preferences -> Downloads -> Components -> Command Line Tools*.
+
 ### Install Macports
 
 [Macports](http://www.macports.org/) is a great, convenient package manager for Mac OS X. It simplifies many steps by automatically managing dependencies between packages. Some Linux-only packages have been ported to Mac and are available through Macports. To build CUBRID we need some of those GNU packages available on Linux. So, we need Macports.
@@ -56,6 +58,30 @@ To find the current directory path you can execute `pwd` command:
 
     $ pwd
     /Users/user/Downloads/RB-8.4.1
+
+### Set Java environment variables
+
+Since CUBRID supports [Java Stored Procedures](http://www.cubrid.org/cubrid_java_stored_procedures), when building CUBRID from source code we need JDK 1.6 or newer to compile the source responsible for Java Stored Procedures.
+
+First, check if you have JDK installed. Type the following to get Java Compiler version.
+
+    javac -version
+
+If it outputs **No Java runtime present, requesting install** or something of this sort, go to [Oracle Downloads](http://www.oracle.com/technetwork/java/javase/downloads/index.html) page and download the latest JDK (***Notice:** it's JDK **not** JRE*). You can find **.pkg** file for Mac OS X.
+
+Once JDK is installed, run the following to find where the **Home** directory is for Java.
+
+    /usr/libexec/java_home
+
+Which outputs something like **/Library/Java/JavaVirtualMachines/1.7.0.jdk/Contents/Home**. Copy it and set to `JAVA_HOME` variable. The **Home** directory already contains */include* and */lib* directories necessary for building CUBRID. So we are good.
+
+    export JAVA_HOME=/Library/Java/JavaVirtualMachines/1.7.0.jdk/Contents/Home
+
+#### In Mountain Lion
+
+For some reason **jni_md.h** file is located in a separate directory under *$JAVA_HOME/include/darwin/* instead of just *$JAVA_HOME/include/*. Since this file is required to build *Java Stored Procedure* feature in CUBRID, we need to hard copy (not symlink) this file to *$JAVA_HOME/include/*.
+
+    sudo cp $JAVA_HOME/include/darwin/jni_md.h $JAVA_HOME/include/
 
 ### Configure files
 
