@@ -1,6 +1,6 @@
 Index: src/broker/cas_net_buf.h
 ===================================================================
---- src/broker/cas_net_buf.h	(revision 6668)
+--- src/broker/cas_net_buf.h	(revision 6865)
 +++ src/broker/cas_net_buf.h	(working copy)
 @@ -44,7 +44,7 @@
  
@@ -13,7 +13,7 @@ Index: src/broker/cas_net_buf.h
  #endif
 Index: src/cci/cci_net_buf.h
 ===================================================================
---- src/cci/cci_net_buf.h	(revision 6668)
+--- src/cci/cci_net_buf.h	(revision 6865)
 +++ src/cci/cci_net_buf.h	(working copy)
 @@ -56,7 +56,7 @@
  
@@ -26,7 +26,7 @@ Index: src/cci/cci_net_buf.h
  #endif
 Index: src/cci/cci_common.h
 ===================================================================
---- src/cci/cci_common.h	(revision 6668)
+--- src/cci/cci_common.h	(revision 6865)
 +++ src/cci/cci_common.h	(working copy)
 @@ -58,7 +58,7 @@
   ************************************************************************/
@@ -37,16 +37,16 @@ Index: src/cci/cci_common.h
  #include "porting.h"
  #endif
  
-@@ -70,7 +70,7 @@
+@@ -69,6 +69,8 @@
+ #if defined(WINDOWS)
  #define __func__		__FUNCTION__
  #define gettid()                GetCurrentThreadId()
- #else
--#define gettid()                syscall(__NR_gettid)
++#elif defined(MAC_OS)
 +#define gettid()                getpid()
+ #else
+ #define gettid()                syscall(__NR_gettid)
  #endif
- 
- #define API_SLOG(con) \
-@@ -246,7 +246,7 @@
+@@ -246,7 +248,7 @@
  
  #if defined(WINDOWS)
    typedef unsigned long in_addr_t;
@@ -57,7 +57,7 @@ Index: src/cci/cci_common.h
  #define IS_INVALID_SOCKET(socket) ((socket) < 0)
 Index: src/base/porting.h
 ===================================================================
---- src/base/porting.h	(revision 6668)
+--- src/base/porting.h	(revision 6865)
 +++ src/base/porting.h	(working copy)
 @@ -33,11 +33,15 @@
  #define __attribute__(X)
@@ -96,7 +96,7 @@ Index: src/base/porting.h
    CONDITION_VARIABLE native_cond;
 Index: configure.ac
 ===================================================================
---- configure.ac	(revision 6668)
+--- configure.ac	(revision 6865)
 +++ configure.ac	(working copy)
 @@ -87,7 +87,7 @@
  case $SYSTEM_TYPE in
@@ -118,7 +118,7 @@ Index: configure.ac
  	DBGW_DEFS="$DBGW_DEFS -DBUILD_MOCK"
 Index: external/gc6.7/darwin_stop_world.c
 ===================================================================
---- external/gc6.7/darwin_stop_world.c	(revision 6668)
+--- external/gc6.7/darwin_stop_world.c	(revision 6865)
 +++ external/gc6.7/darwin_stop_world.c	(working copy)
 @@ -10,7 +10,7 @@
     be allocated, is called the red zone. This area as shown in Figure 3-2 may
@@ -534,7 +534,7 @@ Index: external/gc6.7/darwin_stop_world.c
      }
 Index: external/gc6.7/include/private/gc_priv.h
 ===================================================================
---- external/gc6.7/include/private/gc_priv.h	(revision 6668)
+--- external/gc6.7/include/private/gc_priv.h	(revision 6865)
 +++ external/gc6.7/include/private/gc_priv.h	(working copy)
 @@ -1,4 +1,4 @@
 -/* 
@@ -940,7 +940,7 @@ Index: external/gc6.7/include/private/gc_priv.h
  # endif /* GC_PRIVATE_H */
 Index: external/gc6.7/include/private/gcconfig.h
 ===================================================================
---- external/gc6.7/include/private/gcconfig.h	(revision 6668)
+--- external/gc6.7/include/private/gcconfig.h	(revision 6865)
 +++ external/gc6.7/include/private/gcconfig.h	(working copy)
 @@ -1,4 +1,4 @@
 -/* 
@@ -1186,7 +1186,7 @@ Index: external/gc6.7/include/private/gcconfig.h
  #   if defined(SAVE_CALL_NARGS) && defined(CAN_SAVE_CALL_ARGS)
 Index: external/gc6.7/os_dep.c
 ===================================================================
---- external/gc6.7/os_dep.c	(revision 6668)
+--- external/gc6.7/os_dep.c	(revision 6865)
 +++ external/gc6.7/os_dep.c	(working copy)
 @@ -185,7 +185,7 @@
  {
@@ -2347,7 +2347,7 @@ Index: external/gc6.7/os_dep.c
  		    goto out;
 Index: external/libregex38a/include/regex38a.h
 ===================================================================
---- external/libregex38a/include/regex38a.h	(revision 6668)
+--- external/libregex38a/include/regex38a.h	(revision 6865)
 +++ external/libregex38a/include/regex38a.h	(working copy)
 @@ -1,5 +1,5 @@
 -#ifndef _REGEX_H_
