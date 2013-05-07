@@ -36,7 +36,7 @@ Now install the tools required to build CUBRID.
 
     svn co http://cubrid.svn.sourceforge.net/svnroot/cubrid/cubrid/branches/RB-8.4.1
 
-The above will download **RB.8.4.1**  branch, esectially the 8.4.1 branch, into **RB.8.4.1** directory.
+The above will download **RB.8.4.1**  branch into **RB.8.4.1** directory.
 
 ### Create symlinks to GNU libs
 
@@ -91,10 +91,12 @@ Some files in CUBRID source code need to be executable while for some reason the
     chmod +x external/libregex38a/configure
     chmod +x external/libregex38a/install-sh
 
-For **CUBRID 8.4.3** the following new files (*absent in previous versions*) also need to be executable.
+For **CUBRID 8.4.3** and onward the following new files (*absent in previous versions*) also need to be executable.
 
     cd RB-8.4.3
     chmod +x external/expat-2.0.1/configure
+    chmod +x external/bison-2.3/configure
+    chmod +x external/libedit-20120601-3.0/configure
 
 ## Apply Mac OS X specific Patch
 
@@ -145,7 +147,7 @@ If you are building **CUBRID 8.4.3** or **9.0**, before moving to the next final
     cd build/cci
     make -j
 
-If everything went fine, you can find the compiled CUBRID CCI libraries in ***RB-8.4.1/build/cci/.lib/***. Notice that ***.lib*** directory is hidden because it preceeds with a period. You may not see it in the Finder. You have to use your Terminal to see hidden directories and files.
+If everything went fine, you can find the compiled CUBRID CCI libraries (particularly ***.dylib***, ***.a*** and ***.la*** files) in ***RB-8.4.1/build/cci/.lib/***. Notice that ***.lib*** directory is hidden because it preceeds with a period. You may not see it in the Finder. You have to use your Terminal to see hidden directories and files.
 
 Now install the libraries. Notice that you need **sudo** privileges.
 
@@ -174,7 +176,7 @@ If you plan to link to this CUBRID CCI library from other CUBRID drivers such as
 
     sudo ln -s /Users/user/cubrid/lib/libcascci.8.dylib /Users/user/cubrid/lib/libcascci.so
 
-We need this symlink because CUBRID drivers try to dynamically link to **.so** library which is a common library extension on Linux. On Mac OS X it is **.dylib**. But as of 8.4.3 CUBRID drivers link to **.so**, so we need to create this symlink.
+We need this symlink because CUBRID drivers try to dynamically link to **.so** library which is a common library extension on Linux. On Mac OS X it is **.dylib**. But as of 9.1.0 CUBRID drivers link to **.so**, so we need to create this symlink.
 
 Done! Now you can follow the following tutorials to install other CUBRID drivers which have dynamic dependency on CUBRID CCI driver.
 

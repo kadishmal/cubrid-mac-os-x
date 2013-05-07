@@ -1,0 +1,452 @@
+Index: src/broker/cas_net_buf.h
+===================================================================
+--- src/broker/cas_net_buf.h	(revision 10811)
++++ src/broker/cas_net_buf.h	(working copy)
+@@ -44,7 +44,7 @@
+ 
+ #if (defined(SOLARIS) && !defined(SOLARIS_X86)) || defined(HPUX) || defined(AIX) || defined(PPC_LINUX)
+ #define BYTE_ORDER_BIG_ENDIAN
+-#elif defined(WINDOWS) || defined(LINUX) || defined(OSF1) || defined(ALPHA_LINUX) || defined(UNIXWARE7) || defined(SOLARIS_X86)
++#elif defined(WINDOWS) || defined(LINUX) || defined(OSF1) || defined(ALPHA_LINUX) || defined(UNIXWARE7) || defined(SOLARIS_X86) || defined(MAC_OS)
+ #ifdef BYTE_ORDER_BIG_ENDIAN
+ #error BYTE_ORDER_BIG_ENDIAN defined
+ #endif
+Index: src/cci/cci_net_buf.h
+===================================================================
+--- src/cci/cci_net_buf.h	(revision 10811)
++++ src/cci/cci_net_buf.h	(working copy)
+@@ -56,7 +56,7 @@
+ 
+ #if (defined(SOLARIS) && !defined(SOLARIS_X86)) || defined(HPUX) || defined(AIX)
+ #define BYTE_ORDER_BIG_ENDIAN
+-#elif defined(WINDOWS) || defined(LINUX) || defined(SOLARIS_X86)
++#elif defined(WINDOWS) || defined(LINUX) || defined(SOLARIS_X86) || defined(MAC_OS)
+ #ifdef BYTE_ORDER_BIG_ENDIAN
+ #error BYTE_ORDER_BIG_ENDIAN defined
+ #endif
+Index: src/cci/cci_common.h
+===================================================================
+--- src/cci/cci_common.h	(revision 10811)
++++ src/cci/cci_common.h	(working copy)
+@@ -67,6 +67,8 @@
+ #if defined(WINDOWS)
+ #define __func__		__FUNCTION__
+ #define gettid()                GetCurrentThreadId()
++#elif defined(MAC_OS)
++#define gettid()                getpid()
+ #else
+ #define gettid()                syscall(__NR_gettid)
+ #endif
+Index: src/base/getopt.h
+===================================================================
+--- src/base/getopt.h	(revision 10811)
++++ src/base/getopt.h	(working copy)
+@@ -61,6 +61,7 @@
+ {
+ #endif
+ 
++#if !defined(MAC_OS)
+   int getopt (int, char *const *, const char *);
+   int getopt_long (int, char *const *, const char *,
+ 		   const struct option *, int *);
+@@ -77,6 +78,7 @@
+   extern int optind;
+   extern int optopt;
+ #endif
++#endif
+ 
+ #ifdef __cplusplus
+ };
+Index: src/base/porting.h
+===================================================================
+--- src/base/porting.h	(revision 10811)
++++ src/base/porting.h	(working copy)
+@@ -33,6 +33,10 @@
+ #define __attribute__(X)
+ #endif
+ 
++#if defined(MAC_OS)
++#include <stdlib.h>
++#endif
++
+ #if defined(WINDOWS)
+ #define IMPORT_VAR 	__declspec(dllimport)
+ #define EXPORT_VAR 	__declspec(dllexport)
+@@ -258,7 +262,7 @@
+ /*
+ #define _setjmp                 setjmp
+ */
+-#else /* WINDOWS */
++#elif !defined(MAC_OS) /* WINDOWS */
+ 
+ #if !defined(HAVE_CTIME_R)
+ #  error "HAVE_CTIME_R"
+@@ -428,7 +432,7 @@
+ 		   va_list argptr);
+ #endif
+ 
+-#if defined(WINDOWS)
++#if defined(WINDOWS) || defined(MAC_OS)
+ /* The following structure is used to generate uniformly distributed
+  * pseudo-random numbers reentrantly.
+  */
+@@ -436,7 +440,9 @@
+ {
+   unsigned short _rand48_seed[3];
+ };
++#endif
+ 
++#if defined(WINDOWS)
+ /* These functions are implemented in rand.c. And rand.c will be included
+  * on Windows build.
+  */
+@@ -457,10 +463,13 @@
+ } pthread_mutex_t;
+ 
+ typedef HANDLE pthread_mutexattr_t;
++#endif
+ 
+-
++#if defined(WINDOWS) || defined(MAC_OS)
+ #define PTHREAD_MUTEX_INITIALIZER	{{ NULL, 0, 0, NULL, NULL, 0 }, NULL}
++#endif
+ 
++#if defined(WINDOWS)
+ typedef union
+ {
+   CONDITION_VARIABLE native_cond;
+Index: configure.ac
+===================================================================
+--- configure.ac	(revision 10811)
++++ configure.ac	(working copy)
+@@ -90,7 +90,7 @@
+ case $SYSTEM_TYPE in
+ 	*linux*) SYS_DEFS="-DGCC -DLINUX -D_GNU_SOURCE -DI386"
+ 		 SYS_LIBS="" ;;
+-	*)       SYS_DEFS=""
++	*)       SYS_DEFS="-DMAC_OS"
+ 		 SYS_LIBS="" ;;
+ esac
+ 
+Index: external/gc6.7/darwin_stop_world.c
+===================================================================
+--- external/gc6.7/darwin_stop_world.c	(revision 10811)
++++ external/gc6.7/darwin_stop_world.c	(working copy)
+@@ -79,6 +79,8 @@
+   ppc_thread_state_t state;
+ #elif defined(I386)
+   i386_thread_state_t state;
++#elif defined(X86_64)
++  x86_thread_state64_t state;
+ #else
+ # error FIXME for non-x86 || ppc architectures
+ #endif
+@@ -102,15 +104,36 @@
+ 	if(r != KERN_SUCCESS) ABORT("thread_get_state failed");
+ 	
+ #if defined(I386)
+-	lo = state.esp;
++	lo = state.__esp;
+ 
+-	GC_push_one(state.eax); 
+-	GC_push_one(state.ebx); 
+-	GC_push_one(state.ecx); 
+-	GC_push_one(state.edx); 
+-	GC_push_one(state.edi); 
+-	GC_push_one(state.esi); 
+-	GC_push_one(state.ebp); 
++	GC_push_one(state.__eax); 
++	GC_push_one(state.__ebx); 
++	GC_push_one(state.__ecx); 
++	GC_push_one(state.__edx); 
++	GC_push_one(state.__edi); 
++	GC_push_one(state.__esi); 
++	GC_push_one(state.__ebp); 
++#elif defined(X86_64)
++  lo = (void *)state.THREAD_FLD(rsp);
++# ifndef DARWIN_DONT_PARSE_STACK
++    *phi = GC_FindTopOfStack(state.THREAD_FLD(rsp));
++# endif
++  GC_push_one(state.THREAD_FLD(rax));
++  GC_push_one(state.THREAD_FLD(rbx));
++  GC_push_one(state.THREAD_FLD(rcx));
++  GC_push_one(state.THREAD_FLD(rdx));
++  GC_push_one(state.THREAD_FLD(rdi));
++  GC_push_one(state.THREAD_FLD(rsi));
++  GC_push_one(state.THREAD_FLD(rbp));
++  /* GC_push_one(state.THREAD_FLD(rsp)); */
++  GC_push_one(state.THREAD_FLD(r8));
++  GC_push_one(state.THREAD_FLD(r9));
++  GC_push_one(state.THREAD_FLD(r10));
++  GC_push_one(state.THREAD_FLD(r11));
++  GC_push_one(state.THREAD_FLD(r12));
++  GC_push_one(state.THREAD_FLD(r13));
++  GC_push_one(state.THREAD_FLD(r14));
++  GC_push_one(state.THREAD_FLD(r15));
+ #elif defined(POWERPC)
+ 	lo = (void*)(state.r1 - PPC_RED_ZONE_SIZE);
+         
+Index: external/gc6.7/include/private/gc_priv.h
+===================================================================
+--- external/gc6.7/include/private/gc_priv.h	(revision 10811)
++++ external/gc6.7/include/private/gc_priv.h	(working copy)
+@@ -464,6 +464,59 @@
+ #   define GETENV(name) 0
+ #endif
+ 
++#if defined(DARWIN)
++# if defined(POWERPC)
++#   if CPP_WORDSZ == 32
++#     define GC_THREAD_STATE_T          ppc_thread_state_t
++#     define GC_MACH_THREAD_STATE       PPC_THREAD_STATE
++#     define GC_MACH_THREAD_STATE_COUNT PPC_THREAD_STATE_COUNT
++#   else
++#     define GC_THREAD_STATE_T          ppc_thread_state64_t
++#     define GC_MACH_THREAD_STATE       PPC_THREAD_STATE64
++#     define GC_MACH_THREAD_STATE_COUNT PPC_THREAD_STATE64_COUNT
++#   endif
++# elif defined(I386) || defined(X86_64)
++#   if CPP_WORDSZ == 32
++#     define GC_THREAD_STATE_T          x86_thread_state32_t
++#     define GC_MACH_THREAD_STATE       x86_THREAD_STATE32
++#     define GC_MACH_THREAD_STATE_COUNT x86_THREAD_STATE32_COUNT
++#   else
++#     define GC_THREAD_STATE_T          x86_thread_state64_t
++#     define GC_MACH_THREAD_STATE       x86_THREAD_STATE64
++#     define GC_MACH_THREAD_STATE_COUNT x86_THREAD_STATE64_COUNT
++#   endif
++# else
++#   if defined(ARM32)
++#     define GC_THREAD_STATE_T          arm_thread_state_t
++#   else
++#     error define GC_THREAD_STATE_T
++#   endif
++#   define GC_MACH_THREAD_STATE         MACHINE_THREAD_STATE
++#   define GC_MACH_THREAD_STATE_COUNT   MACHINE_THREAD_STATE_COUNT
++# endif
++
++# if CPP_WORDSZ == 32
++#   define GC_MACH_HEADER   mach_header
++#   define GC_MACH_SECTION  section
++#   define GC_GETSECTBYNAME getsectbynamefromheader
++# else
++#   define GC_MACH_HEADER   mach_header_64
++#   define GC_MACH_SECTION  section_64
++#   define GC_GETSECTBYNAME getsectbynamefromheader_64
++# endif
++
++  /* Try to work out the right way to access thread state structure     */
++  /* members.  The structure has changed its definition in different    */
++  /* Darwin versions.  This now defaults to the (older) names           */
++  /* without __, thus hopefully, not breaking any existing              */
++  /* Makefile.direct builds.                                            */
++# if __DARWIN_UNIX03
++#   define THREAD_FLD(x) __ ## x
++# else
++#   define THREAD_FLD(x) x
++# endif
++#endif /* DARWIN */
++
+ /*********************************/
+ /*                               */
+ /* Word-size-dependent defines   */
+Index: external/gc6.7/include/private/gcconfig.h
+===================================================================
+--- external/gc6.7/include/private/gcconfig.h	(revision 10811)
++++ external/gc6.7/include/private/gcconfig.h	(working copy)
+@@ -59,6 +59,11 @@
+ #    define FREEBSD
+ # endif
+ 
++/* And one for Darwin: */
++# if defined(macosx) || (defined(__APPLE__) && defined(__MACH__))
++#   define DARWIN
++# endif
++
+ /* Determine the machine type: */
+ # if defined(__arm__) || defined(__thumb__)
+ #    define ARM32
+@@ -297,8 +302,11 @@
+ #   define MACOS
+ #   define mach_type_known
+ # endif
+-# if defined(macosx) || (defined(__APPLE__) && defined(__MACH__))
++# if defined(macosx) || (defined(__APPLE__) && defined(__MACH__)) || defined(MAC_OS)
+ #   define DARWIN
++#	  define DATASTART ((ptr_t) get_etext())
++#   define DATAEND	/* not needed */
++#   define STACKBOTTOM ((ptr_t) LMGetCurStackBase())
+ #   if defined(__ppc__)  || defined(__ppc64__)
+ #    define POWERPC
+ #    define mach_type_known
+@@ -306,6 +314,13 @@
+ #   if defined(__i386__)
+ #    define I386
+ #    define mach_type_known
++#   elif defined(__x86_64__) || defined(__x86_64)
++#    define X86_64
++#    define mach_type_known
++#   elif defined(__arm__)
++#    define ARM32
++#    define mach_type_known
++#    define DARWIN_DONT_PARSE_STACK
+ #   endif
+ # endif
+ # if defined(NeXT) && defined(mc68000)
+@@ -795,27 +810,29 @@
+ #     define DATAEND (_end)
+ #   endif
+ #   ifdef DARWIN
+-#     ifdef __ppc64__
++#     define OS_TYPE "DARWIN"
++#     define DYNAMIC_LOADING
++#     if defined(__ppc64__)
+ #       define ALIGNMENT 8
+ #       define CPP_WORDSZ 64
++#       define STACKBOTTOM ((ptr_t) 0x7fff5fc00000)
++#       define CACHE_LINE_SIZE 64
++#       ifndef HBLKSIZE
++#         define HBLKSIZE 4096
++#       endif
+ #     else
+ #       define ALIGNMENT 4
++#       define STACKBOTTOM ((ptr_t) 0xc0000000)
+ #     endif
+-#     define OS_TYPE "DARWIN"
+-#     define DYNAMIC_LOADING
+       /* XXX: see get_end(3), get_etext() and get_end() should not be used.
+          These aren't used when dyld support is enabled (it is by default) */
+ #     define DATASTART ((ptr_t) get_etext())
+-#     define DATAEND	((ptr_t) get_end())
+-#     define STACKBOTTOM ((ptr_t) 0xc0000000)
+-#     define USE_MMAP
++#     define DATAEND   ((ptr_t) get_end())
++#     ifndef USE_MMAP
++#       define USE_MMAP
++#     endif
+ #     define USE_MMAP_ANON
+-#     define USE_ASM_PUSH_REGS
+-      /* This is potentially buggy. It needs more testing. See the comments in
+-         os_dep.c.  It relies on threads to track writes. */
+-#     ifdef GC_DARWIN_THREADS
+-/* #       define MPROTECT_VDB -- diabled for now.  May work for some apps. */
+-#     endif
++#     define MPROTECT_VDB
+ #     include <unistd.h>
+ #     define GETPAGESIZE() getpagesize()
+ #     if defined(USE_PPC_PREFETCH) && defined(__GNUC__)
+@@ -1318,14 +1335,11 @@
+ #     define DATASTART ((ptr_t) get_etext())
+ #     define DATAEND	((ptr_t) get_end())
+ #     define STACKBOTTOM ((ptr_t) 0xc0000000)
+-#     define USE_MMAP
++#     ifndef USE_MMAP
++#       define USE_MMAP
++#     endif
+ #     define USE_MMAP_ANON
+-#     define USE_ASM_PUSH_REGS
+-      /* This is potentially buggy. It needs more testing. See the comments in
+-        os_dep.c.  It relies on threads to track writes. */
+-#     ifdef GC_DARWIN_THREADS
+-/* #       define MPROTECT_VDB -- disabled for now.  May work for some apps. */
+-#     endif
++#     define MPROTECT_VDB
+ #     include <unistd.h>
+ #     define GETPAGESIZE() getpagesize()
+       /* There seems to be some issues with trylock hanging on darwin. This
+@@ -1993,6 +2007,49 @@
+ #	    define PREFETCH_FOR_WRITE(x) __builtin_prefetch((x), 1)
+ #	endif
+ #   endif
++#   ifdef DARWIN
++#     define OS_TYPE "DARWIN"
++#     define DARWIN_DONT_PARSE_STACK
++#     define DYNAMIC_LOADING
++      /* XXX: see get_end(3), get_etext() and get_end() should not be used. */
++      /* These aren't used when dyld support is enabled (it is by default)  */
++#     define DATASTART ((ptr_t) get_etext())
++#     define DATAEND   ((ptr_t) get_end())
++#     define STACKBOTTOM ((ptr_t) 0x7fff5fc00000)
++#     ifndef USE_MMAP
++#       define USE_MMAP
++#     endif
++#     define USE_MMAP_ANON
++#     define MPROTECT_VDB
++#     include <unistd.h>
++#     define GETPAGESIZE() getpagesize()
++      /* There seems to be some issues with trylock hanging on darwin.  */
++      /* This should be looked into some more.                          */
++#     define NO_PTHREAD_TRYLOCK
++#   endif
++#   ifdef FREEBSD
++#       define OS_TYPE "FREEBSD"
++#       ifndef GC_FREEBSD_THREADS
++#           define MPROTECT_VDB
++#       endif
++#       ifdef __GLIBC__
++#           define SIG_SUSPEND          (32+6)
++#           define SIG_THR_RESTART      (32+5)
++            extern int _end[];
++#           define DATAEND (ptr_t)(_end)
++#       else
++#           define SIG_SUSPEND SIGUSR1
++#           define SIG_THR_RESTART SIGUSR2
++#       endif
++#       define FREEBSD_STACKBOTTOM
++#       ifdef __ELF__
++#           define DYNAMIC_LOADING
++#       endif
++        extern char etext[];
++        ptr_t GC_FreeBSDGetDataStart(size_t, ptr_t);
++#       define DATASTART GC_FreeBSDGetDataStart(0x1000, (ptr_t)etext)
++#       define DATASTART_IS_FUNC
++#   endif
+ #   ifdef NETBSD
+ #	define OS_TYPE "NETBSD"
+ #	ifdef __ELF__
+Index: external/gc6.7/os_dep.c
+===================================================================
+--- external/gc6.7/os_dep.c	(revision 10811)
++++ external/gc6.7/os_dep.c	(working copy)
+@@ -3802,10 +3802,17 @@
+         mach_msg_type_number_t exc_state_count = PPC_EXCEPTION_STATE64_COUNT;
+         ppc_exception_state64_t exc_state;
+ #     endif
+-#   elif defined(I386)
++#   elif defined(I386) || defined(X86_64)
++#     if CPP_WORDSZ == 32
+         thread_state_flavor_t flavor = i386_EXCEPTION_STATE;
+         mach_msg_type_number_t exc_state_count = i386_EXCEPTION_STATE_COUNT;
+         i386_exception_state_t exc_state;
++#     else
++        thread_state_flavor_t flavor = x86_EXCEPTION_STATE64;
++        mach_msg_type_number_t exc_state_count = x86_EXCEPTION_STATE64_COUNT;
++        x86_exception_state64_t exc_state;
++#     endif
++#     define DARWIN_EXC_STATE_DAR     THREAD_FLD(faultvaddr)
+ #   else
+ #	error FIXME for non-ppc/x86 darwin
+ #   endif
+@@ -3839,8 +3846,8 @@
+     /* This is the address that caused the fault */
+ #if defined(POWERPC)
+     addr = (char*) exc_state.dar;
+-#elif defined (I386)
+-    addr = (char*) exc_state.faultvaddr;
++#elif defined (I386) || defined(X86_64)
++    addr = (char*) exc_state.DARWIN_EXC_STATE_DAR;
+ #else
+ #   error FIXME for non POWERPC/I386
+ #endif
+Index: external/libregex38a/include/regex38a.h
+===================================================================
+--- external/libregex38a/include/regex38a.h	(revision 10811)
++++ external/libregex38a/include/regex38a.h	(working copy)
+@@ -1,5 +1,5 @@
+-#ifndef _REGEX_H_
+-#define	_REGEX_H_	/* never again */
++#ifndef _CUB_REGEX_H_
++#define	_CUB_REGEX_H_	/* never again */
+ /* ========= begin header generated by ./mkh ========= */
+ #ifdef __cplusplus
+ extern "C" {
